@@ -22,21 +22,30 @@ const db = knex({
   }
 });
 
-
 const app = express();
-
 app.use(bodyParser.json());
 app.use(cors());
+
 
 app.post('/signin',(req,res) => {
 	db.select('email','password').from('users')
 		.where('email','=', req.body.email)
 		.then(user => {
 			if(user[0].password === req.body.password)
-			res.json(user[0])
+			return res.json(user[0])
+			else
+			return res.json(`Couldn't Signin`);
 		})
 		.catch(err => res.status(400).json(`Couldn't Signin`));
 })
+
+app.post('/getSecId',(req,res) => {
+	db.select('id').from('sections').where('sec_name','=',req.body.sec_name)
+	.then(secId => {
+		res.json(secId[0]);
+	}).catch(err => res.status(400).json(`Something Went Wrong`));
+})
+
 
 app.post('/getimage',(req,res) => {
 	db.select('tname','image').from('teams')
@@ -45,6 +54,144 @@ app.post('/getimage',(req,res) => {
 			res.json(img)
 		})
 		.catch(err => res.status(400).json(`Couldn't get image`));
+})
+
+app.post('/teams',(req,res) => {
+	db.select('tname').from('teams')
+		.then(team => {
+			res.json(team);
+		})
+})
+
+app.post('/players',(req,res) => {
+	db.select('pname').from('players')
+		.then(player => {
+			res.json(player);
+		})
+		
+})
+
+app.post('/filterPlayers',(req,res) => {
+	db.select('team_id').from('players').where('pname','=',req.body.pname)
+	.then(result =>{
+		console.log(result);
+		db.select('*').from('matches').where('team1','=',result[0].team_id).orWhere('team2','=',result[0].team_id)
+		.then(resp => {
+			console.log(resp);
+			res.json(resp)
+		}).catch(err => res.status(400).json('Something Went Wrong'))
+	}).catch(err => res.status(400).json('Something Went Wrong'))
+})
+
+app.post('/filterMatches',(req,res) => {
+	console.log(req.body.tname);
+	db.select('id').from('teams').where('tname','=',req.body.tname)
+	.then(result =>{
+		console.log(result);
+		db.select('*').from('matches').where('team1','=',result[0].id).orWhere('team2','=',result[0].id)
+		.then(resp => {
+			console.log(resp);
+			res.json(resp)
+		}).catch(err => res.status(400).json(`Something Went Wrong`));
+	}).catch(err => res.status(400).json(`Something Went Wrong`));
+})
+
+
+app.post('/getTickets',(req,res) => {
+	db.select('id').from('users').where('email','=',req.body.email)
+	.then(result => {
+		console.log(result);
+		db.select('*').from('tickets').where('user_id','=',result[0].id)
+		.then(resp => {
+			console.log(resp);
+			res.json(resp);
+		}).catch(err => res.status(400).json(`Something Went Wrong`));
+	}).catch(err => res.status(400).json(`Something Went Wrong`));
+})	
+
+app.post('/retrieve',(req,res) => {
+	db.select('*').from('users').where('email','=',req.body.email)
+	.then(user => {
+		res.json(user[0])
+	}).catch(err => res.status(400).json(`Something Went Wrong`))
+})
+
+app.post('/matchTeams',(req,res) => {
+	db.select('team1_name','team2_name').from('matches').where('id','=',req.body.id)
+	.then(data => {
+		console.log(data);
+		res.json(data[0]);
+	}).catch(err => res.status(400).json(err));
+})
+
+app.post('/player',(req,res) => {
+	db.select('*').from('players').where('pname','=',req.body.pname)
+	.then(player => {
+		res.json(player)
+	}).catch(err => res.status(400).json('Something Went Wrong'))
+})
+
+app.post('/getID',(req,res) => {
+	db.select('id').from('users').where('email','=',req.body.email)
+	.then(userid => {
+		res.json(userid[0])
+	}).catch(err => res.status(400).json('Something Went Wrong'))
+})
+
+
+app.post('/getSections',(req,res) => {
+	db.select('*').from('sections')
+	.then(sect => {
+		res.json(sect);
+	}).catch(err => res.status(400).json(`Something Went Wrong`));
+})
+
+app.post('/getTeams',(req,res) => {
+	db.select('team1_name','team2_name').from('matches').where('id','=',req.body.id)
+	.then(teams => {
+		res.json(teams[0]);
+	}).catch(err => res.status(400).json(err));
+})
+
+
+app.post('/updateProfile',(req,res) => {
+	// const {name, username, email, password, age, id } = req.body;
+	// req.body.age = parseInt(req.body.age,10);
+	db('users')
+	.returning('*')
+	.where('email','=',req.body.email)
+	.update({
+		username : req.body.username,
+		name :  req.body.name,
+		email : req.body.email,
+		password : req.body.password,
+		age : req.body.age
+	})
+	.then(user => {
+		console.log(user[0]);
+		res.json(user[0]);
+	})
+	.catch(err => {
+		console.log(err);
+		res.status(400).json('Something Went Wrong')
+	})
+});
+
+
+app.post('/book',(req,res) => {
+	db('tickets')
+	.returning('*')
+	.insert({
+		match_id : req.body.match_id,
+		section_id : req.body.section_id,
+		user_id : req.body.user_id,
+		createdat : new Date()
+	})
+	.then(data => {
+		console.log(data);
+		res.json(data[0]);
+	})	
+	.catch(err => res.status(400).json('Something Went Wrong'));
 })
 
 
@@ -59,15 +206,33 @@ app.post('/register',(req,res) => {
 		email: email,
 		password: password,
 		age: age,
-		createdat: new Date()
+		createdat : new Date()
 	})
 	.then(user => {
 		res.json(user[0]);
 	})
 	.catch(err => res.status(400).json(`Couldn't Register`))
 })
+
+app.post('/contact',(req,res) => {
+	// const { name, email, message } = req.body;
+	db('feedback')
+	.returning('*')
+	.insert({
+		createdat : new Date(),
+		name : req.body.name,
+		email : req.body.email,
+		message : req.body.message
+	})
+	.then(feedback => {
+		console.log(feedback);
+		res.json(feedback[0])
+	})
+	.catch(err => res.status(400).json(`Couldn't Recieve Feeback`))
+})
+
+
 app.listen(3001, ()=> {
 	console.log('app is running on port 3001');
 });
-
 
