@@ -7,7 +7,6 @@ Server Side Things To-Do :
 4.Dashboard
 5.Database Connection .. Done
 */
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const knex = require('knex');
