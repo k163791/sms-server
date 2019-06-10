@@ -46,9 +46,23 @@ app.post('/getSecId',(req,res) => {
 	}).catch(err => res.status(400).json(`Something Went Wrong`));
 })
 
+app.post('/displayPlayers',(req,res) => {
+	db.select('*').from('players').where('team_id','=',req.body.team_id)
+	.then(data => {
+		res.json(data)
+	}).catch(err => res.status(400).json(err))
+})
+
+app.post('/displayMatches',(req,res) => {
+	db.select('*').from('matches').where('team1','=',req.body.id).orWhere('team2','=',req.body.id)
+	.then(data => {
+		res.json(data);
+	}).catch(err => res.status(400).json(err));
+})
+
 
 app.post('/getimage',(req,res) => {
-	db.select('tname','image').from('teams')
+	db.select('id','tname','image').from('teams')
 		.then(img => {
 			// console.log(img[0]);
 			res.json(img)
@@ -124,6 +138,29 @@ app.post('/matchTeams',(req,res) => {
 	}).catch(err => res.status(400).json(err));
 })
 
+
+app.post('/leagues',(req,res)=>{
+	db.select('*').from('leagues')
+	.then(data => {
+		console.log(data);
+		res.json(data);
+	}).catch(err => res.status(400).json(err))
+})
+
+app.post('/addTeam',(req,res) => {
+	db('teams')
+	.returning('*')
+	.insert({
+		tname : req.body.tname,
+		country : req.body.country,
+		ratings : req.body.ratings,
+		createdat : new Date()
+	}).then(data => {
+		res.json(data);
+	}).catch(err=> res.status(400).json(err))
+})
+
+	
 app.post('/player',(req,res) => {
 	db.select('*').from('players').where('pname','=',req.body.pname)
 	.then(player => {
@@ -153,6 +190,13 @@ app.post('/getTeams',(req,res) => {
 	}).catch(err => res.status(400).json(err));
 })
 
+
+app.post('/cancel',(req,res) => {
+	db('tickets')
+	.where('id','=',req.body.id)
+	.del()
+	.catch(err => res.status(400).json('Something Went Wrong'))
+})
 
 app.post('/updateProfile',(req,res) => {
 	// const {name, username, email, password, age, id } = req.body;
